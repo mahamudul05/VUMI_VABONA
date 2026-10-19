@@ -30,6 +30,21 @@ export async function getFileBlob(docIdOrHash: string): Promise<Blob | undefined
 }
 
 /**
+ * Retrieve a stored document blob by checking ID or File Hash
+ */
+export async function getStoredDocumentBlob(docId?: string, fileHash?: string): Promise<Blob | undefined> {
+  if (docId) {
+    const blob = await getFileBlob(docId);
+    if (blob) return blob;
+  }
+  if (fileHash) {
+    const blob = await getFileBlob(fileHash);
+    if (blob) return blob;
+  }
+  return undefined;
+}
+
+/**
  * Delete a file blob from IndexedDB
  */
 export async function deleteFileBlob(docIdOrHash: string): Promise<void> {

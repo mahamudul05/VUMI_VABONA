@@ -450,6 +450,7 @@ export async function runDeedVerificationPipeline(
     originalFileName: file.name,
     fileSize: file.size,
     fileHash,
+    fileType: file.type || 'application/pdf',
     matchedReferenceId: matchedDoc?.id,
     status,
     statusExplanationBn,

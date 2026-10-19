@@ -3,12 +3,13 @@ import { useSearchParams } from 'react-router-dom';
 import {
   Upload, FileCheck, Search, AlertTriangle, CheckCircle,
   XCircle, HelpCircle, Info, Printer,
-  Eye, Trash2, Clock, ShieldCheck, FileText, ArrowRight
+  Eye, Trash2, Clock, ShieldCheck, FileText, ArrowRight,
+  Download, RotateCcw
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Card, Breadcrumb, Disclaimer } from '../components/SharedUI';
 import { computeSHA256, readFileAsArrayBuffer, triggerPrint } from '../utils';
-import { storeFileBlob } from '../utils/fileStorage';
+import { storeFileBlob, downloadBlob, previewBlob, getStoredDocumentBlob } from '../utils/fileStorage';
 import { runDeedVerificationPipeline } from '../utils/ocrService';
 import type { 
   DetailedVerificationStatus, 
@@ -58,6 +59,52 @@ export default function DeedVerificationPage() {
     currentUser ? (s.userId === currentUser.id || s.userName === currentUser.name) : true
   );
 
+  // Retrieve persistent stored file blob and load into verification workflow
+  const loadSubmissionAndFile = useCallback(async (sub: VerificationSubmission, switchToUploadTab = false) => {
+    setActiveSubmission(sub);
+    try {
+      localStorage.setItem('vumi_active_verification_id', sub.id);
+    } catch {
+      // ignore
+    }
+
+    // Retrieve file blob persistently stored in IndexedDB
+    const storedBlob = await getStoredDocumentBlob(sub.id, sub.fileHash);
+    if (storedBlob) {
+      const mimeType = sub.fileType || storedBlob.type || (sub.originalFileName.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
+      const retrievedFile = new File([storedBlob], sub.originalFileName, {
+        type: mimeType,
+        lastModified: new Date(sub.createdAt).getTime(),
+      });
+      setFile(retrievedFile);
+      setComputedHash(sub.fileHash);
+      if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl);
+      const url = URL.createObjectURL(storedBlob);
+      setFilePreviewUrl(url);
+    }
+
+    if (switchToUploadTab) {
+      setActiveTab('upload');
+      window.scrollTo({ top: 200, behavior: 'smooth' });
+    }
+  }, [filePreviewUrl]);
+
+  // Restore active verification and its persistent stored document after page refresh or application restart
+  useEffect(() => {
+    if (activeSubmission) return;
+    try {
+      const targetId = paramId || localStorage.getItem('vumi_active_verification_id');
+      if (targetId) {
+        const found = verificationSubmissions.find(s => s.id === targetId || s.fileHash === targetId);
+        if (found) {
+          loadSubmissionAndFile(found, false);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [verificationSubmissions, paramId, activeSubmission, loadSubmissionAndFile]);
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -92,6 +139,7 @@ export default function DeedVerificationPage() {
       const buffer = await readFileAsArrayBuffer(f);
       const hash = await computeSHA256(buffer);
       setComputedHash(hash);
+      // Persistently cache file blob in IndexedDB by hash
       await storeFileBlob(hash, f);
     } catch {
       setComputedHash('');
@@ -103,6 +151,11 @@ export default function DeedVerificationPage() {
     setFilePreviewUrl(null);
     setComputedHash('');
     setActiveSubmission(null);
+    try {
+      localStorage.removeItem('vumi_active_verification_id');
+    } catch {
+      // ignore
+    }
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -129,6 +182,19 @@ export default function DeedVerificationPage() {
           setProcessingStatusText(status);
         }
       );
+
+      // Persistently store the uploaded file blob in IndexedDB under submission.id AND submission.fileHash
+      await storeFileBlob(submission.id, file);
+      if (submission.fileHash) {
+        await storeFileBlob(submission.fileHash, file);
+      }
+
+      // Persist active ID so verification result and file remain available after page refresh / restart
+      try {
+        localStorage.setItem('vumi_active_verification_id', submission.id);
+      } catch {
+        // ignore
+      }
 
       setActiveSubmission(submission);
       dispatch({ type: 'ADD_VERIFICATION_SUBMISSION', payload: submission });
@@ -572,7 +638,7 @@ export default function DeedVerificationPage() {
                     <div 
                       key={sub.id}
                       onClick={() => {
-                        setActiveSubmission(sub);
+                        loadSubmissionAndFile(sub, false);
                         window.scrollTo({ top: 400, behavior: 'smooth' });
                       }}
                       style={{
@@ -584,12 +650,14 @@ export default function DeedVerificationPage() {
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
+                        gap: '0.75rem',
+                        flexWrap: 'wrap',
                         transition: 'box-shadow 0.2s',
                       }}
                       className="history-row"
                     >
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                      <div style={{ flex: 1, minWidth: '220px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
                           <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{sub.originalFileName}</span>
                           <span 
                             style={{ 
@@ -608,9 +676,61 @@ export default function DeedVerificationPage() {
                           {new Date(sub.createdAt).toLocaleString('bn-BD')} • ID: {sub.id}
                         </p>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--color-primary)', fontSize: '0.85rem' }}>
-                        <span>{language === 'bn' ? 'রিপোর্ট দেখুন' : 'View Report'}</span>
-                        <ArrowRight size={16} />
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <button
+                          className="btn btn-outline btn-sm"
+                          title={language === 'bn' ? 'সংরক্ষিত মূল দলিল ডাউনলোড' : 'Download Stored Deed'}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const blob = await getStoredDocumentBlob(sub.id, sub.fileHash);
+                            if (blob) {
+                              downloadBlob(blob, sub.originalFileName);
+                            } else {
+                              alert(language === 'bn' ? 'সংরক্ষিত মূল ফাইল পাওয়া যায়নি' : 'Stored deed file not found');
+                            }
+                          }}
+                          style={{ padding: '4px 8px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <Download size={13} />
+                          <span>{language === 'bn' ? 'ডাউনলোড' : 'Download'}</span>
+                        </button>
+
+                        <button
+                          className="btn btn-outline btn-sm"
+                          title={language === 'bn' ? 'মূল দলিল প্রিভিউ' : 'Preview Deed'}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const blob = await getStoredDocumentBlob(sub.id, sub.fileHash);
+                            if (blob) {
+                              previewBlob(blob);
+                            } else {
+                              alert(language === 'bn' ? 'সংরক্ষিত মূল ফাইল পাওয়া যায়নি' : 'Stored deed file not found');
+                            }
+                          }}
+                          style={{ padding: '4px 8px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <Eye size={13} />
+                          <span>{language === 'bn' ? 'প্রিভিউ' : 'Preview'}</span>
+                        </button>
+
+                        <button
+                          className="btn btn-outline btn-sm"
+                          title={language === 'bn' ? 'পুনরায় যাচাইয়ে লোড করুন' : 'Load for Verification'}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            loadSubmissionAndFile(sub, true);
+                          }}
+                          style={{ padding: '4px 8px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-primary)' }}
+                        >
+                          <RotateCcw size={13} />
+                          <span>{language === 'bn' ? 'যাচাই' : 'Re-verify'}</span>
+                        </button>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--color-primary)', fontSize: '0.85rem', marginLeft: '0.25rem' }}>
+                          <span>{language === 'bn' ? 'রিপোর্ট' : 'Report'}</span>
+                          <ArrowRight size={15} />
+                        </div>
                       </div>
                     </div>
                   );
@@ -771,6 +891,46 @@ export default function DeedVerificationPage() {
               <button className="btn btn-outline" onClick={triggerPrint}>
                 <Printer size={16} />
                 <span>{language === 'bn' ? 'যাচাই প্রত্যয়নপত্র প্রিন্ট / সংরক্ষণ' : 'Print / Export Certificate'}</span>
+              </button>
+              
+              <button 
+                className="btn btn-outline" 
+                onClick={async () => {
+                  const blob = await getStoredDocumentBlob(activeSubmission.id, activeSubmission.fileHash);
+                  if (blob) {
+                    downloadBlob(blob, activeSubmission.originalFileName);
+                  } else {
+                    alert(language === 'bn' ? 'সংরক্ষিত মূল ফাইল পাওয়া যায়নি' : 'Stored document file not found');
+                  }
+                }}
+              >
+                <Download size={16} />
+                <span>{language === 'bn' ? 'সংরক্ষিত মূল দলিল ডাউনলোড' : 'Download Stored Deed'}</span>
+              </button>
+
+              <button 
+                className="btn btn-outline" 
+                onClick={async () => {
+                  const blob = await getStoredDocumentBlob(activeSubmission.id, activeSubmission.fileHash);
+                  if (blob) {
+                    previewBlob(blob);
+                  } else {
+                    alert(language === 'bn' ? 'সংরক্ষিত মূল ফাইল পাওয়া যায়নি' : 'Stored document file not found');
+                  }
+                }}
+              >
+                <Eye size={16} />
+                <span>{language === 'bn' ? 'মূল দলিল প্রিভিউ' : 'Preview Stored Deed'}</span>
+              </button>
+
+              <button 
+                className="btn btn-primary" 
+                onClick={() => {
+                  loadSubmissionAndFile(activeSubmission, true);
+                }}
+              >
+                <RotateCcw size={16} />
+                <span>{language === 'bn' ? 'নথি পুনরায় যাচাইয়ে লোড করুন' : 'Reload for Re-verification'}</span>
               </button>
             </div>
           </Card>

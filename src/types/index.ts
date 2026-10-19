@@ -171,6 +171,7 @@ export interface VerificationSubmission {
   originalFileName: string;
   fileSize: number;
   fileHash: string;
+  fileType?: string;
   matchedReferenceId?: string;
   status: DetailedVerificationStatus;
   statusExplanationBn: string;

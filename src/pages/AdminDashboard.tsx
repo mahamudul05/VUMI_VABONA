@@ -22,7 +22,7 @@ import {
   formatDateTime, formatDate, generateId, computeSHA256, 
   readFileAsArrayBuffer, toBanglaDigits, toEnglishDigits 
 } from '../utils';
-import { storeFileBlob, getFileBlob, downloadBlob, previewBlob } from '../utils/fileStorage';
+import { storeFileBlob, getFileBlob, downloadBlob, previewBlob, getStoredDocumentBlob } from '../utils/fileStorage';
 import { bangladeshLocations, getDivisions, getDistricts, getUpazilas } from '../data/locations';
 import type { 
   RegisteredDocument, User, FamilyMember, InheritanceClaim, 
@@ -2655,7 +2655,35 @@ export default function AdminDashboard() {
             <div className="review-modal-body">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.85rem' }}>
                 <div><strong>{isBn ? 'নাগরিক:' : 'Citizen:'}</strong> {reviewingSubmission.userName || 'আবদুল করিম'}</div>
-                <div><strong>{isBn ? 'মূল ফাইল:' : 'File:'}</strong> {reviewingSubmission.originalFileName}</div>
+                <div>
+                  <strong>{isBn ? 'মূল ফাইল:' : 'File:'}</strong> {reviewingSubmission.originalFileName}
+                  <span style={{ marginLeft: '0.4rem', display: 'inline-flex', gap: '0.25rem' }}>
+                    <button
+                      className="btn-table-action"
+                      title={isBn ? 'সংরক্ষিত মূল দলিল ডাউনলোড' : 'Download Document'}
+                      onClick={async () => {
+                        const blob = await getStoredDocumentBlob(reviewingSubmission.id, reviewingSubmission.fileHash);
+                        if (blob) downloadBlob(blob, reviewingSubmission.originalFileName);
+                        else alert(isBn ? 'সংরক্ষিত ফাইল পাওয়া যায়নি' : 'Stored document file not found');
+                      }}
+                      style={{ padding: '2px 6px', fontSize: '0.72rem' }}
+                    >
+                      <Download size={12} />
+                    </button>
+                    <button
+                      className="btn-table-action"
+                      title={isBn ? 'মূল দলিল প্রিভিউ' : 'Preview Document'}
+                      onClick={async () => {
+                        const blob = await getStoredDocumentBlob(reviewingSubmission.id, reviewingSubmission.fileHash);
+                        if (blob) previewBlob(blob);
+                        else alert(isBn ? 'সংরক্ষিত ফাইল পাওয়া যায়নি' : 'Stored document file not found');
+                      }}
+                      style={{ padding: '2px 6px', fontSize: '0.72rem' }}
+                    >
+                      <Eye size={12} />
+                    </button>
+                  </span>
+                </div>
                 <div><strong>{isBn ? 'যাচাই অবস্থা:' : 'Status:'}</strong> <span className="badge badge-success">{reviewingSubmission.status}</span></div>
                 <div><strong>{isBn ? 'ওসিআর অবস্থা:' : 'OCR:'}</strong> {reviewingSubmission.ocrStatus}</div>
               </div>
