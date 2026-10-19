@@ -181,7 +181,7 @@ export default function DeedVerificationPage() {
         file,
         effectiveDocs,
         {
-          deedNumber: optionalDeedNo || recordId,
+          deedNumber: optionalDeedNo,
           mouza: optionalMouza,
           dagNumber: optionalDag
         },
@@ -829,6 +829,27 @@ export default function DeedVerificationPage() {
                   <div className="hash-row">
                     <span className="hash-label">{t('deed.storedHash')}:</span>
                     <code style={{ wordBreak: 'break-all' }}>{matchedRefDoc.fileHash}</code>
+                  </div>
+                )}
+                {matchedRefDoc && activeSubmission.fileHash.toLowerCase() !== matchedRefDoc.fileHash.toLowerCase() && (
+                  <div style={{
+                    marginTop: '0.65rem',
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: '4px',
+                    background: '#fffbeb',
+                    border: '1px solid #fde68a',
+                    color: '#92400e',
+                    fontSize: '0.85rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}>
+                    <AlertTriangle size={16} style={{ flexShrink: 0 }} />
+                    <span style={{ fontWeight: 500 }}>
+                      {language === 'bn' 
+                        ? 'ফাইলের বাইট মূল সংরক্ষিত রেকর্ডের সাথে ভিন্ন (File bytes differ from registered original)' 
+                        : 'File bytes differ from registered original'}
+                    </span>
                   </div>
                 )}
               </div>
