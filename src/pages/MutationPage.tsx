@@ -2,7 +2,7 @@
 // Mutation Application Page — Multi-step guided form
 // ============================================================
 import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   User, MapPin, Users, Upload, ClipboardCheck, CheckCircle,
   Plus, Trash2, FileText, AlertCircle, ArrowLeft, ArrowRight
@@ -29,21 +29,23 @@ const DOC_TYPES = [
 export default function MutationPage() {
   const { t, language, currentUser, parcels, dispatch, addAudit } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
+  const prefill = (location.state as any) || {};
 
   const [step, setStep] = useState(0);
   const [showConfirm, setShowConfirm] = useState(false);
   const [submittedId, setSubmittedId] = useState('');
 
   // Form data
-  const [deceasedName, setDeceasedName] = useState('');
-  const [deceasedNameEn, setDeceasedNameEn] = useState('');
+  const [deceasedName, setDeceasedName] = useState(prefill.deceasedName || '');
+  const [deceasedNameEn, setDeceasedNameEn] = useState(prefill.deceasedNameEn || '');
   const [applicantName, setApplicantName] = useState(
     currentUser ? (language === 'bn' ? currentUser.name : currentUser.nameEn) : ''
   );
   const [applicantNid, setApplicantNid] = useState(currentUser?.nid || '');
-  const [relationship, setRelationship] = useState('');
-  const [selectedParcelId, setSelectedParcelId] = useState('');
-  const [claimedShare, setClaimedShare] = useState('');
+  const [relationship, setRelationship] = useState(prefill.relationship || (language === 'bn' ? 'ওয়ারিশ (পুত্র/কন্যা)' : 'Heir (Son/Daughter)'));
+  const [selectedParcelId, setSelectedParcelId] = useState(prefill.parcelId || '');
+  const [claimedShare, setClaimedShare] = useState(prefill.claimedShare ? String(prefill.claimedShare) : '');
   const [heirs, setHeirs] = useState<HeirInfo[]>([]);
   const [documents, setDocuments] = useState<UploadedDocument[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});

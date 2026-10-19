@@ -1047,18 +1047,19 @@ export const seedFamilyMembers: FamilyMember[] = [
     id: 'fm-006',
     userId: 'user-citizen-1',
     relatedUserId: undefined,
-    name: 'আলী হোসেন (কাল্পনিক)',
-    nameEn: 'Ali Hossain (Fictional)',
-    relation: 'father',
-    relationLabel: 'শ্বশুর',
-    relationLabelEn: 'Father-in-law (configured as Father)',
-    isDeceased: true,
+    name: 'শিরীন আক্তার (কাল্পনিক)',
+    nameEn: 'Shirin Akter (Fictional)',
+    relation: 'spouse',
+    relationLabel: 'স্ত্রী',
+    relationLabelEn: 'Wife',
+    nid: '1993456781234',
+    isDeceased: false,
     verificationStatus: 'verified_demo',
   },
 ];
 
 // ── Inheritance Claims ──────────────────────────────
-// Potential inheritance claims configured by Admin for demo
+// Potential inheritance claims configured for demo
 export const seedInheritanceClaims: InheritanceClaim[] = [
   {
     id: 'inh-001',
@@ -1073,20 +1074,6 @@ export const seedInheritanceClaims: InheritanceClaim[] = [
     requiredDocuments: ['মৃত্যু সনদ', 'ওয়ারিশ সনদ', 'মূল দলিলের কপি'],
     verificationStatus: 'pending',
     notes: 'আবেদন পর্যালোচনাধীন',
-  },
-  {
-    id: 'inh-002',
-    heirUserId: 'user-citizen-1',
-    deceasedMemberId: 'fm-006',
-    deceasedName: 'আলী হোসেন (কাল্পনিক)',
-    deceasedNameEn: 'Ali Hossain (Fictional)',
-    parcelId: 'PARCEL-006',
-    claimedShareDecimal: 15,
-    status: 'rejected',
-    applicationId: 'APP-2025-0003',
-    requiredDocuments: ['মৃত্যু সনদ', 'ওয়ারিশ সনদ', 'NID কপি', 'জমির দলিল'],
-    verificationStatus: 'unverified',
-    notes: 'আবেদন প্রত্যাখ্যাত — কাগজপত্র জমা হয়নি',
   },
 ];
 

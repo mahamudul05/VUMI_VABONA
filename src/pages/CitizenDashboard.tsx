@@ -33,6 +33,7 @@ export default function CitizenDashboard() {
   const [searchDeedId, setSearchDeedId] = useState('');
   const [deedSearchResult, setDeedSearchResult] = useState<any>(null);
   const [deedSearched, setDeedSearched] = useState(false);
+  const [selectedParentId, setSelectedParentId] = useState<string>('');
 
   const isBn = language === 'bn';
 
@@ -654,99 +655,363 @@ export default function CitizenDashboard() {
         )}
 
         {/* ═════════ 4. MY INHERITANCE TAB ═════════ */}
-        {activeTab === 'inheritance' && (
-          <div className="portal-content">
-            <div className="section-title-bar">
-              <div>
-                <h2>{t('inheritance.title')}</h2>
-                <p className="text-muted">{isBn ? 'পৈতৃক ও পারিবারিক সূত্রে সম্ভাব্য অংশ ও আবেদনের সুযোগ' : 'Potential inheritance shares and application pathways'}</p>
-              </div>
-              <Link to="/mutation" className="btn btn-primary-sm">
-                <PlusCircle size={14} /> {isBn ? 'নতুন আবেদন' : 'Apply Now'}
-              </Link>
-            </div>
+        {activeTab === 'inheritance' && (() => {
+          const myParents = myFamilyMembers.filter(f => f.relation === 'father' || f.relation === 'mother');
+          const father = myFamilyMembers.find(f => f.relation === 'father');
+          const mother = myFamilyMembers.find(f => f.relation === 'mother');
+          const wife = myFamilyMembers.find(f => f.relation === 'spouse');
+          const sons = myFamilyMembers.filter(f => f.relation === 'son');
+          const daughters = myFamilyMembers.filter(f => f.relation === 'daughter');
 
-            {myClaims.length === 0 ? (
-              <div className="content-card text-center p-4">
-                <Landmark size={48} style={{ color: 'var(--color-primary)', margin: '0 auto 1rem' }} />
-                <h3>{t('inheritance.noInheritance')}</h3>
-                <p className="text-muted">{isBn ? 'কোনো সম্ভাব্য উত্তরাধিকার দাবি রেকর্ডভুক্ত নেই।' : 'No inheritance claims listed.'}</p>
-                <Link to="/mutation" className="btn btn-primary-sm mt-2">
-                  <PlusCircle size={14} /> {isBn ? 'উত্তরাধিকার নামজারি আবেদন করুন' : 'Start Inheritance Application'}
+          const activeParent = myParents.find(p => p.id === (selectedParentId || myParents[0]?.id)) || myParents[0] || null;
+
+          const getParentParcels = (parent: typeof father) => {
+            if (!parent) return [];
+            const cleanName = parent.name.replace(/\s*\([^)]*\)/g, '').trim().toLowerCase();
+            const cleanNameEn = (parent.nameEn || '').replace(/\s*\([^)]*\)/g, '').trim().toLowerCase();
+
+            return parcels.filter(parcel => {
+              const isOwner = parcel.owners.some(o => {
+                const oName = o.ownerName.toLowerCase();
+                const oNameEn = (o.ownerNameEn || '').toLowerCase();
+                return (cleanName && oName.includes(cleanName)) || (cleanNameEn && oNameEn.includes(cleanNameEn));
+              });
+              if (isOwner) return true;
+
+              const isTransacted = parcel.transactions.some(t => {
+                const prev = t.previousParty.toLowerCase();
+                const rec = t.receivingParty.toLowerCase();
+                return (cleanName && (prev.includes(cleanName) || rec.includes(cleanName)));
+              });
+              if (isTransacted) return true;
+
+              const isClaimed = inheritanceClaims.some(c => c.deceasedMemberId === parent.id && c.parcelId === parcel.id);
+              return isClaimed;
+            });
+          };
+
+          const selectedParentParcels = getParentParcels(activeParent);
+
+          const handleApplyNamjari = (parcel: any, parent: any) => {
+            const linkedClaim = inheritanceClaims.find(c => c.heirUserId === currentUser.id && c.parcelId === parcel.id);
+            navigate('/mutation', {
+              state: {
+                parcelId: parcel.id,
+                deceasedName: parent ? parent.name.replace(/\s*\([^)]*\)/g, '').trim() : '',
+                deceasedNameEn: parent ? (parent.nameEn || '').replace(/\s*\([^)]*\)/g, '').trim() : '',
+                claimedShare: linkedClaim ? linkedClaim.claimedShareDecimal : '',
+                relationship: language === 'bn' ? 'ওয়ারিশ (পুত্র/কন্যা)' : 'Heir (Son/Daughter)'
+              }
+            });
+          };
+
+          return (
+            <div className="portal-content">
+              <div className="section-title-bar">
+                <div>
+                  <h2>{t('inheritance.title')}</h2>
+                  <p className="text-muted">{isBn ? 'পৈতৃক ও পারিবারিক সূত্রে সম্ভাব্য অংশ, অভিভাবকের জমি ও নামজারি আবেদন' : 'Parental land records, family heir distribution, and mutation application'}</p>
+                </div>
+                <Link to="/mutation" className="btn btn-primary-sm">
+                  <PlusCircle size={14} /> {isBn ? 'নতুন নামজারি আবেদন' : 'Apply for Namjari'}
                 </Link>
               </div>
-            ) : (
-              <div className="claims-list">
-                {myClaims.map(claim => {
-                  const parcel = parcels.find(p => p.id === claim.parcelId);
-                  const relApp = claim.applicationId ? applications.find(a => a.id === claim.applicationId) : null;
 
-                  return (
-                    <div key={claim.id} className="claim-item-card">
-                      <div className="claim-header">
-                        <div>
-                          <h3 className="claim-deceased-name">{isBn ? claim.deceasedName : claim.deceasedNameEn}</h3>
-                          <span className="claim-deceased-subtext">{isBn ? 'মৃত মূল মালিকের রেকর্ড' : 'Deceased Owner Record'}</span>
+              {/* ── TOP SECTION: Parent and Family Details ── */}
+              <div className="content-card" style={{ marginBottom: '1.5rem' }}>
+                <div className="card-header-row" style={{ marginBottom: '1rem' }}>
+                  <div className="card-header-title">
+                    <Users size={18} className="text-primary" />
+                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
+                      {isBn ? 'অভিভাবক ও পারিবারিক সদস্য বিবরণ' : 'Parent & Family Members Overview'}
+                    </h3>
+                  </div>
+                  <span className="badge badge-info font-mono">
+                    {isBn ? 'ফারায়েজ ও আইনানুগ বণ্টন' : 'Inheritance & Succession Basis'}
+                  </span>
+                </div>
+
+                {/* Parent Selection Cards */}
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Landmark size={15} className="text-primary" />
+                    <span>{isBn ? 'পৈতৃক জমি দেখতে পিতা বা মাতা নির্বাচন করুন:' : 'Select Father or Mother to View Land Records:'}</span>
+                  </div>
+
+                  {myParents.length === 0 ? (
+                    <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 'var(--radius-md)', padding: '1.25rem', color: '#64748b', fontSize: '0.875rem' }}>
+                      <AlertTriangle size={18} style={{ color: '#d97706', verticalAlign: 'middle', marginRight: '0.5rem' }} />
+                      <strong>{isBn ? 'পারিবারিক তথ্য প্রয়োজন:' : 'More Family Information Needed:'} </strong>
+                      {isBn
+                        ? 'সিস্টেমে পিতা বা মাতার তথ্য অন্তর্ভুক্ত নেই। উত্তরাধিকার হিসাব ও পৈতৃক জমি দেখার জন্য পারিবারিক তথ্য সংযোজন প্রয়োজন।'
+                        : 'Parent information is not recorded in the system. Please add family records to calculate inheritance and view parental land.'}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.75rem' }}>
+                      {myParents.map(parent => {
+                        const isSelected = activeParent?.id === parent.id;
+                        const parentParcelsCount = getParentParcels(parent).length;
+                        return (
+                          <div
+                            key={parent.id}
+                            onClick={() => setSelectedParentId(parent.id)}
+                            style={{
+                              border: isSelected ? '2px solid var(--color-primary)' : '1px solid #e2e8f0',
+                              background: isSelected ? 'var(--color-primary-lighter)' : '#ffffff',
+                              borderRadius: 'var(--radius-md)',
+                              padding: '1rem',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              boxShadow: isSelected ? '0 2px 6px rgba(13, 110, 63, 0.12)' : 'none'
+                            }}
+                          >
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                                <span className={`badge ${isSelected ? 'badge-primary' : 'badge-muted'}`}>
+                                  {isBn ? parent.relationLabel : parent.relationLabelEn}
+                                </span>
+                                <strong style={{ fontSize: '1rem', color: '#0f172a' }}>
+                                  {isBn ? parent.name : parent.nameEn}
+                                </strong>
+                              </div>
+                              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', fontSize: '0.8rem', color: '#64748b' }}>
+                                <span className={`badge ${parent.isDeceased ? 'badge-danger' : 'badge-success'}`}>
+                                  {parent.isDeceased ? (isBn ? 'মৃত মূল মালিক' : 'Deceased Owner') : (isBn ? 'জীবিত' : 'Living')}
+                                </span>
+                                {parent.nid && <span>NID: ****{parent.nid.slice(-4)}</span>}
+                                <span>• {isBn ? `${toBanglaDigits(parentParcelsCount)}টি জমি রেকর্ড` : `${parentParcelsCount} Land Record(s)`}</span>
+                              </div>
+                            </div>
+                            <div style={{ color: isSelected ? 'var(--color-primary)' : '#94a3b8' }}>
+                              <CheckCircle2 size={24} style={{ opacity: isSelected ? 1 : 0.25 }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Direct Heirs: Wife, Sons, Daughters */}
+                <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.65rem' }}>
+                    {isBn ? 'অন্যান্য পারিবারিক সদস্য ও উত্তরাধিকারী (স্ত্রী, পুত্র ও কন্যা):' : 'Other Family Members & Direct Heirs (Wife, Sons & Daughters):'}
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '0.75rem' }}>
+                    {/* Wife / Spouse */}
+                    {wife ? (
+                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 'var(--radius-md)', padding: '0.75rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                          <span className="badge badge-muted">{isBn ? 'স্ত্রী' : 'Wife'}</span>
+                          <span className="badge badge-success">{isBn ? 'জীবিত' : 'Living'}</span>
                         </div>
-                        <span className="badge badge-warning">
-                          {claim.status === 'potential' ? (isBn ? 'সম্ভাব্য দাবি' : 'Potential Claim') : claim.status}
-                        </span>
+                        <strong style={{ fontSize: '0.92rem', color: '#1e293b', display: 'block' }}>{isBn ? wife.name : wife.nameEn}</strong>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{wife.nid ? `NID: ****${wife.nid.slice(-4)}` : ''} • {getVerifBadge(wife.verificationStatus)}</span>
                       </div>
+                    ) : (
+                      <div style={{ background: '#fafafa', border: '1px dashed #cbd5e1', borderRadius: 'var(--radius-md)', padding: '0.75rem', fontSize: '0.8rem', color: '#64748b' }}>
+                        <span className="badge badge-neutral" style={{ marginBottom: '0.25rem' }}>{isBn ? 'স্ত্রী' : 'Wife'}</span>
+                        <p style={{ margin: 0 }}>{isBn ? 'স্ত্রীর তথ্য রেকর্ডভুক্ত নেই (প্রয়োজনে তথ্য দিন)' : 'No wife record linked (info needed)'}</p>
+                      </div>
+                    )}
 
-                      {parcel && (
-                        <div className="claim-parcel-info">
-                          <MapPin size={14} className="text-primary" />
-                          <span>
-                            {isBn
-                              ? `${parcel.mouza}, ${parcel.upazila}, ${parcel.district} (দাগ: ${parcel.dagNumber}, খতিয়ান: ${parcel.khatianNumber})`
-                              : `${parcel.mouzaEn}, ${parcel.upazilaEn}, ${parcel.districtEn} (Dag: ${parcel.dagNumber}, Khatian: ${parcel.khatianNumber})`}
-                          </span>
+                    {/* Sons */}
+                    {sons.length > 0 ? (
+                      sons.map(son => (
+                        <div key={son.id} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 'var(--radius-md)', padding: '0.75rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                            <span className="badge badge-muted">{isBn ? 'পুত্র' : 'Son'}</span>
+                            <span className="badge badge-success">{isBn ? 'জীবিত' : 'Living'}</span>
+                          </div>
+                          <strong style={{ fontSize: '0.92rem', color: '#1e293b', display: 'block' }}>{isBn ? son.name : son.nameEn}</strong>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{son.nid ? `NID: ****${son.nid.slice(-4)}` : ''} • {getVerifBadge(son.verificationStatus)}</span>
                         </div>
-                      )}
-
-                      <div className="claim-shares-info">
-                        <span className="share-text-label">{isBn ? 'দাবিকৃত হিস্যা / পরিমাণ' : 'Claimed Share'}:</span>
-                        <strong className="share-text-val">
-                          {isBn ? toBanglaDigits(claim.claimedShareDecimal) : claim.claimedShareDecimal} {t('land.decimal')}
-                        </strong>
+                      ))
+                    ) : (
+                      <div style={{ background: '#fafafa', border: '1px dashed #cbd5e1', borderRadius: 'var(--radius-md)', padding: '0.75rem', fontSize: '0.8rem', color: '#64748b' }}>
+                        <span className="badge badge-neutral" style={{ marginBottom: '0.25rem' }}>{isBn ? 'পুত্র' : 'Son'}</span>
+                        <p style={{ margin: 0 }}>{isBn ? 'কোনো পুত্রের তথ্য অন্তর্ভুক্ত নেই' : 'No son details registered'}</p>
                       </div>
+                    )}
 
-                      {claim.requiredDocuments.length > 0 && (
-                        <div className="claim-docs-checklist">
-                          <span className="checklist-heading">{isBn ? 'প্রয়োজনীয় কাগজপত্রের চেকলিস্ট' : 'Required Documents Checklist'}:</span>
-                          <div className="checklist-tags">
-                            {claim.requiredDocuments.map((doc, idx) => (
-                              <span key={idx} className="doc-check-tag">
-                                <FileText size={12} /> {doc}
+                    {/* Daughters */}
+                    {daughters.length > 0 ? (
+                      daughters.map(daughter => (
+                        <div key={daughter.id} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 'var(--radius-md)', padding: '0.75rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                            <span className="badge badge-muted">{isBn ? 'কন্যা' : 'Daughter'}</span>
+                            <span className="badge badge-success">{isBn ? 'জীবিত' : 'Living'}</span>
+                          </div>
+                          <strong style={{ fontSize: '0.92rem', color: '#1e293b', display: 'block' }}>{isBn ? daughter.name : daughter.nameEn}</strong>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{daughter.nid ? `NID: ****${daughter.nid.slice(-4)}` : ''} • {getVerifBadge(daughter.verificationStatus)}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div style={{ background: '#fafafa', border: '1px dashed #cbd5e1', borderRadius: 'var(--radius-md)', padding: '0.75rem', fontSize: '0.8rem', color: '#64748b' }}>
+                        <span className="badge badge-neutral" style={{ marginBottom: '0.25rem' }}>{isBn ? 'কন্যা' : 'Daughter'}</span>
+                        <p style={{ margin: 0 }}>{isBn ? 'কোনো কন্যার তথ্য অন্তর্ভুক্ত নেই' : 'No daughter details registered'}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── BELOW SECTION: Selected Parent's Land Details & Namjari ── */}
+              <div className="section-title-bar" style={{ marginTop: '1.75rem', marginBottom: '1rem' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#0f172a' }}>
+                    {activeParent
+                      ? (isBn
+                          ? `${activeParent.relationLabel} (${activeParent.name}) এর রেকর্ডভুক্ত জমি`
+                          : `Land Records of ${activeParent.relationLabelEn} (${activeParent.nameEn})`)
+                      : (isBn ? 'অভিভাবকের জমি সংক্রান্ত তথ্য' : 'Parent Land Records')}
+                  </h3>
+                  <p className="text-muted" style={{ fontSize: '0.85rem' }}>
+                    {isBn
+                      ? 'বিদ্যমান ক্যাডাস্ট্রাল ডাটাবেজে রেকর্ডকৃত জমির খতিয়ান, দাগ, অবস্থান ও নামজারি আবেদন'
+                      : 'Recorded cadastral parcel data with khatian, dag, location, and namjari application'}
+                  </p>
+                </div>
+              </div>
+
+              {selectedParentParcels.length === 0 ? (
+                <div className="content-card text-center p-4">
+                  <Landmark size={44} style={{ color: '#94a3b8', margin: '0 auto 0.75rem' }} />
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#334155' }}>
+                    {activeParent
+                      ? (isBn
+                          ? `${activeParent.relationLabel} (${activeParent.name}) এর নামে কোনো রেকর্ডভুক্ত জমি পাওয়া যায়নি`
+                          : `No linked land records available for ${activeParent.relationLabelEn} (${activeParent.nameEn})`)
+                      : (isBn ? 'কোনো অভিভাবক নির্বাচন করা হয়নি' : 'No parent selected')}
+                  </h4>
+                  <p className="text-muted" style={{ fontSize: '0.875rem', maxWidth: 540, margin: '0 auto 1.25rem' }}>
+                    {isBn
+                      ? 'শুধুমাত্র সিস্টেমে থাকা বিদ্যমান রেকর্ড প্রদর্শিত হচ্ছে। কোনো কাল্পনিক রেকর্ড তৈরি করা হয়নি। আপনার কাছে যদি উক্ত অভিভাবকের জমির দলিল বা পর্চা থাকে, তবে নামজারি আবেদন প্রক্রিয়ার মাধ্যমে তা যুক্ত করতে পারেন।'
+                      : 'Only existing records in the database are displayed. No records have been invented. If you hold certified deeds or khatians for this parent, you may apply for mutation.'}
+                  </p>
+                  <Link to="/mutation" className="btn btn-outline-sm">
+                    <PlusCircle size={14} /> {isBn ? 'সাধারণ নামজারি আবেদন করুন' : 'Apply for General Mutation'}
+                  </Link>
+                </div>
+              ) : (
+                <div className="claims-list">
+                  {selectedParentParcels.map(parcel => {
+                    const existingApp = applications.find(a => a.applicantId === currentUser.id && a.parcelId === parcel.id);
+                    const linkedClaim = inheritanceClaims.find(c => c.heirUserId === currentUser.id && c.parcelId === parcel.id);
+
+                    return (
+                      <div key={parcel.id} className="claim-item-card">
+                        <div className="claim-header">
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                              <span className="badge badge-primary">{parcel.surveyType} জরিপ</span>
+                              <h3 className="claim-deceased-name" style={{ margin: 0 }}>
+                                {isBn
+                                  ? `${parcel.mouza}, ${parcel.upazila}, ${parcel.district}`
+                                  : `${parcel.mouzaEn}, ${parcel.upazilaEn}, ${parcel.districtEn}`}
+                              </h3>
+                            </div>
+                            <span className="claim-deceased-subtext">
+                              {isBn ? `মালিকানা রেকর্ড: ${activeParent?.name}` : `Recorded Owner: ${activeParent?.nameEn}`}
+                            </span>
+                          </div>
+
+                          <div>
+                            {existingApp ? (
+                              <div style={{ textAlign: 'right' }}>
+                                <span style={{ fontSize: '0.72rem', color: '#64748b', display: 'block', marginBottom: '2px' }}>
+                                  {isBn ? 'দাখিলকৃত আবেদন:' : 'Application Status:'}
+                                </span>
+                                {getStatusBadge(existingApp.status)}
+                              </div>
+                            ) : linkedClaim ? (
+                              <span className="badge badge-warning">
+                                {linkedClaim.status === 'potential' ? (isBn ? 'সম্ভাব্য ওয়ারিশান' : 'Potential Heir Claim') : linkedClaim.status}
                               </span>
-                            ))}
+                            ) : (
+                              <span className="badge badge-muted">
+                                {isBn ? 'পৈতৃক জমি' : 'Ancestral Land'}
+                              </span>
+                            )}
                           </div>
                         </div>
-                      )}
 
-                      <div className="claim-actions-row">
-                        {parcel && (
+                        {/* Parcel Details Attributes Grid */}
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                          gap: '0.75rem',
+                          background: '#f8fafc',
+                          padding: '0.85rem 1rem',
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid #e2e8f0',
+                          margin: '0.85rem 0'
+                        }}>
+                          <div>
+                            <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>{t('search.dagNumber')}</span>
+                            <strong className="font-mono" style={{ fontSize: '0.95rem', color: '#0f172a' }}>{parcel.dagNumber}</strong>
+                          </div>
+                          <div>
+                            <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>{isBn ? 'খতিয়ান নং' : 'Khatian'}</span>
+                            <strong className="font-mono" style={{ fontSize: '0.95rem', color: '#0f172a' }}>{parcel.khatianNumber}</strong>
+                          </div>
+                          <div>
+                            <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>{t('search.jlNumber')}</span>
+                            <strong className="font-mono" style={{ fontSize: '0.95rem', color: '#0f172a' }}>{parcel.jlNumber}</strong>
+                          </div>
+                          <div>
+                            <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>{isBn ? 'মোট জমির পরিমাণ' : 'Total Area'}</span>
+                            <strong className="font-mono" style={{ fontSize: '0.95rem', color: '#0f172a' }}>
+                              {isBn ? toBanglaDigits(parcel.totalAreaDecimal) : parcel.totalAreaDecimal} {t('land.decimal')}
+                            </strong>
+                          </div>
+                          <div>
+                            <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>{isBn ? 'জমির শ্রেণি' : 'Land Type'}</span>
+                            <strong style={{ color: '#0f172a' }}>{isBn ? parcel.landType : parcel.landTypeEn}</strong>
+                          </div>
+                        </div>
+
+                        {/* Ownership Details */}
+                        <div style={{ fontSize: '0.825rem', color: '#475569', marginBottom: '0.85rem' }}>
+                          <span style={{ fontWeight: 600 }}>{isBn ? 'রেকর্ডভুক্ত মালিকানা অংশ:' : 'Ownership Records:'} </span>
+                          {parcel.owners.map((o, idx) => (
+                            <span key={o.ownerId || idx} style={{ marginRight: '0.75rem' }}>
+                              {isBn ? o.ownerName : o.ownerNameEn} ({isBn ? toBanglaDigits(o.shareDecimal) : o.shareDecimal} {t('land.decimal')})
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Actions Row with Namjari Application */}
+                        <div className="claim-actions-row">
                           <Link to={`/land/${parcel.id}`} className="btn btn-outline-sm">
-                            {isBn ? 'জমি রেকর্ড দেখুন' : 'View Parcel'}
+                            {isBn ? 'জমির সম্পূর্ণ রেকর্ড' : 'View Full Profile'}
                           </Link>
-                        )}
-                        {relApp ? (
-                          <Link to={`/track/${relApp.id}`} className="btn btn-primary-sm">
-                            {isBn ? 'আবেদন অবস্থা ট্র্যাক করুন' : 'Track Application'} ({relApp.id})
-                          </Link>
-                        ) : (
-                          <Link to="/mutation" className="btn btn-primary-sm">
-                            <PlusCircle size={14} /> {isBn ? 'নামজারি আবেদন দাখিল করুন' : 'Apply for Mutation'}
-                          </Link>
-                        )}
+
+                          {existingApp ? (
+                            <Link to={`/track/${existingApp.id}`} className="btn btn-outline-sm">
+                              <ClipboardList size={14} /> {isBn ? `আবেদনের অবস্থা (${existingApp.id})` : `Track Status (${existingApp.id})`}
+                            </Link>
+                          ) : null}
+
+                          <button
+                            className="btn btn-primary-sm"
+                            onClick={() => handleApplyNamjari(parcel, activeParent)}
+                          >
+                            <PlusCircle size={14} /> {isBn ? 'নামজারি আবেদন' : 'Apply for Namjari'}
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* ═════════ 5. MY APPLICATIONS TAB ═════════ */}
         {activeTab === 'applications' && (

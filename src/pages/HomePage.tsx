@@ -50,10 +50,10 @@ export default function HomePage() {
 
   const stats = [
     {
-      value: '৪+',
-      valueEn: '4+',
-      label: isBn ? 'সিঙ্কড মৌজা ও খতিয়ান' : 'Synced Mouzas & Khatians',
-      desc: isBn ? 'সাভার, পটিয়া ও গোদাগাড়ী' : 'Savar, Patiya & Godagari',
+      value: '৫৭,০১৬',
+      valueEn: '57,016',
+      label: isBn ? 'ডাটাবেজে সংগৃহীত মৌজা রেকর্ড' : 'Mouza Records in Dataset',
+      desc: isBn ? '৪১,১৩০টি স্বতন্ত্র মৌজা (৬০টি জেলা)' : '41,130 unique mouzas (60 districts)',
     },
     {
       value: '১০০%',
