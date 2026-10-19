@@ -8,9 +8,10 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Card, Breadcrumb, Disclaimer } from '../components/SharedUI';
-import { computeSHA256, readFileAsArrayBuffer, triggerPrint } from '../utils';
+import { computeSHA256, readFileAsArrayBuffer, triggerPrint, toEnglishDigits } from '../utils';
 import { storeFileBlob, downloadBlob, previewBlob, getStoredDocumentBlob } from '../utils/fileStorage';
 import { runDeedVerificationPipeline } from '../utils/ocrService';
+import { seedRegisteredDocuments } from '../data/seedData';
 import type { 
   DetailedVerificationStatus, 
   VerificationSubmission, 
@@ -166,10 +167,19 @@ export default function DeedVerificationPage() {
     setProcessingProgress(10);
     setProcessingStatusText(language === 'bn' ? 'যাচাই পাইপলাইন চালু হচ্ছে...' : 'Initializing verification pipeline...');
 
+    // Merge authoritative seed docs with current state registered documents
+    const seedMap = new Map(seedRegisteredDocuments.map(s => [s.id, s]));
+    const effectiveDocs = seedRegisteredDocuments.slice();
+    (registeredDocuments || []).forEach(d => {
+      if (!seedMap.has(d.id)) {
+        effectiveDocs.push(d);
+      }
+    });
+
     try {
       const submission = await runDeedVerificationPipeline(
         file,
-        registeredDocuments,
+        effectiveDocs,
         {
           deedNumber: optionalDeedNo || recordId,
           mouza: optionalMouza,
@@ -235,9 +245,21 @@ export default function DeedVerificationPage() {
     if (!recordId.trim()) return;
     setIsProcessing(true);
 
-    const found = registeredDocuments.find(
-      doc => doc.id.toLowerCase() === recordId.trim().toLowerCase() || 
-             doc.deedNumber.toLowerCase() === recordId.trim().toLowerCase()
+    const seedMap = new Map(seedRegisteredDocuments.map(s => [s.id, s]));
+    const effectiveDocs = seedRegisteredDocuments.slice();
+    (registeredDocuments || []).forEach(d => {
+      if (!seedMap.has(d.id)) {
+        effectiveDocs.push(d);
+      }
+    });
+
+    const cleanQuery = toEnglishDigits(recordId).toLowerCase().trim().replace(/[\s\-_/]+/g, '');
+    const found = effectiveDocs.find(
+      doc => {
+        const idMatch = doc.id.toLowerCase() === recordId.trim().toLowerCase();
+        const deedNorm = toEnglishDigits(doc.deedNumber).toLowerCase().trim().replace(/[\s\-_/]+/g, '');
+        return idMatch || deedNorm === cleanQuery || doc.deedNumber.toLowerCase() === recordId.trim().toLowerCase();
+      }
     );
 
     if (found) {

@@ -255,21 +255,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         parsed.users = usersList;
 
-        // Ensure registeredDocuments have required fields and sync REG-DOC-001 with current sample deed
-        if (parsed.registeredDocuments && parsed.registeredDocuments.length > 0) {
-          parsed.registeredDocuments = parsed.registeredDocuments.map((doc: RegisteredDocument) => {
-            if (doc.id === 'REG-DOC-001') {
-              return seedRegisteredDocuments[0];
-            }
-            const seedMatch = seedRegisteredDocuments.find(s => s.id === doc.id || s.deedNumber === doc.deedNumber);
-            return {
-              ...seedMatch,
-              ...doc,
-            };
-          });
-        } else {
-          parsed.registeredDocuments = seedRegisteredDocuments;
-        }
+        // Ensure authoritative seed registeredDocuments are always present with correct hashes and data
+        const userCustomDocs = (parsed.registeredDocuments || []).filter(
+          (doc: RegisteredDocument) => !seedRegisteredDocuments.some(s => s.id === doc.id)
+        );
+        parsed.registeredDocuments = [...seedRegisteredDocuments, ...userCustomDocs];
 
         // Ensure current sample submission is available in verificationSubmissions
         if (!parsed.verificationSubmissions || parsed.verificationSubmissions.length === 0) {
