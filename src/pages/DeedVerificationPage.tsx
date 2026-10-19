@@ -436,6 +436,36 @@ export default function DeedVerificationPage() {
                 <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
                   {language === 'bn' ? 'ক্লিক করুন অথবা ফাইল টেনে এনে ছাড়ুন' : 'Click to browse or drag and drop'}
                 </p>
+                <div style={{ marginTop: '0.85rem', display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
+                  <a
+                    href="/sample-deed.pdf"
+                    download="sample-deed-4872-2026.pdf"
+                    className="btn btn-outline btn-sm"
+                    style={{ fontSize: '0.78rem', padding: '4px 10px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    <Download size={13} />
+                    <span>{language === 'bn' ? 'নমুনা দলিল ডাউনলোড (৪৮৭২/২০২৬)' : 'Download Sample Deed'}</span>
+                  </a>
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    style={{ fontSize: '0.78rem', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/sample-deed.pdf');
+                        const blob = await res.blob();
+                        const sampleFile = new File([blob], 'sample-deed-4872-2026.pdf', { type: 'application/pdf' });
+                        const fakeEvent = { target: { files: [sampleFile] } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                        handleFileSelect(fakeEvent);
+                      } catch (err) {
+                        console.error('Failed to load sample deed:', err);
+                      }
+                    }}
+                  >
+                    <FileText size={13} />
+                    <span>{language === 'bn' ? 'নমুনা দলিল সরাসরি লোড করুন' : 'Load Sample Deed'}</span>
+                  </button>
+                </div>
                 <input
                   ref={fileInputRef}
                   type="file"
