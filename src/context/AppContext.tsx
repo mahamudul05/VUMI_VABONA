@@ -268,10 +268,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
           const subIdx = parsed.verificationSubmissions.findIndex((s: VerificationSubmission) => s.id === 'SUB-2026-001' || s.id === 'SUB-2025-001');
           if (subIdx !== -1) {
             parsed.verificationSubmissions[subIdx] = seedVerificationSubmissions[0];
-          } else {
-            parsed.verificationSubmissions.unshift(seedVerificationSubmissions[0]);
           }
         }
+
+        // Ensure familyMembers only contain valid relationships: father, mother, spouse (wife), son, daughter
+        const allowedRelations = ['father', 'mother', 'spouse', 'son', 'daughter'];
+        let cleanedMembers: FamilyMember[] = [];
+        if (parsed.familyMembers && Array.isArray(parsed.familyMembers)) {
+          cleanedMembers = parsed.familyMembers.filter(
+            (fm: FamilyMember) =>
+              allowedRelations.includes(fm.relation) &&
+              !fm.relationLabel?.includes('শ্বশুর') &&
+              !fm.relationLabelEn?.toLowerCase().includes('in-law') &&
+              fm.relation !== 'sister' &&
+              fm.relation !== 'brother'
+          );
+        }
+        const nonCitizen1 = cleanedMembers.filter((m: FamilyMember) => m.userId !== 'user-citizen-1');
+        parsed.familyMembers = [...seedFamilyMembers, ...nonCitizen1];
+
+        // Ensure inheritanceClaims only contain valid claims (from father/mother, never from in-laws or other members)
+        let cleanedClaims: InheritanceClaim[] = [];
+        if (parsed.inheritanceClaims && Array.isArray(parsed.inheritanceClaims)) {
+          cleanedClaims = parsed.inheritanceClaims.filter(
+            (c: InheritanceClaim) =>
+              c.deceasedMemberId !== 'fm-006-old' &&
+              !c.deceasedName?.includes('আলী হোসেন') &&
+              !c.deceasedNameEn?.toLowerCase().includes('ali hossain')
+          );
+        }
+        if (cleanedClaims.length === 0) {
+          cleanedClaims = seedInheritanceClaims;
+        }
+        parsed.inheritanceClaims = cleanedClaims;
 
         dispatch({ type: 'LOAD_STATE', payload: parsed });
       }

@@ -606,53 +606,118 @@ export default function CitizenDashboard() {
         )}
 
         {/* ═════════ 3. MY HEIRS TAB ═════════ */}
-        {activeTab === 'heirs' && (
-          <div className="portal-content">
-            <div className="section-title-bar">
-              <div>
-                <h2>{t('heir.title')}</h2>
-                <p className="text-muted">{isBn ? 'পারিবারিক সম্পর্ক ও বৈধ উত্তরাধিকারীদের তালিকা' : 'Registered family heirs and relationship status'}</p>
+        {activeTab === 'heirs' && (() => {
+          const myParents = myFamilyMembers.filter(f => f.relation === 'father' || f.relation === 'mother');
+          return (
+            <div className="portal-content">
+              <div className="section-title-bar">
+                <div>
+                  <h2>{t('heir.title')}</h2>
+                  <p className="text-muted">{isBn ? 'উত্তরাধিকার প্রাপ্তির উৎস ও বৈধ উত্তরাধিকারীদের বিবরণ' : 'Inheritance sources and direct heirs details'}</p>
+                </div>
               </div>
-            </div>
 
-            {myFamilyMembers.length === 0 ? (
-              <div className="content-card text-center p-4">
-                <Users size={48} style={{ color: 'var(--color-primary)', margin: '0 auto 1rem' }} />
-                <h3>{t('heir.noHeirs')}</h3>
-                <p className="text-muted">{t('heir.addHint')}</p>
-              </div>
-            ) : (
-              <div className="heirs-grid">
-                {myFamilyMembers.map(fm => (
-                  <div key={fm.id} className="heir-card">
-                    <div className="heir-avatar-circle">
-                      <span>{fm.name.charAt(0)}</span>
-                    </div>
-                    <div className="heir-details">
-                      <div className="heir-name-row">
-                        <h3>{isBn ? fm.name : fm.nameEn}</h3>
-                        <span className="badge badge-muted">
-                          {isBn ? fm.relationLabel : fm.relationLabelEn}
-                        </span>
+              {/* 1. Inheritance Source Banner: User inherits from Father & Mother */}
+              <div className="content-card" style={{ marginBottom: '1.25rem', borderLeft: '4px solid var(--color-primary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
+                  <Landmark size={20} className="text-primary" />
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#0f172a' }}>
+                    {isBn ? 'উত্তরাধিকার প্রাপ্তির উৎস: পিতা ও মাতা' : 'Inheritance Source: Father & Mother'}
+                  </h3>
+                </div>
+                <p style={{ margin: '0 0 0.85rem 0', fontSize: '0.85rem', color: '#64748b' }}>
+                  {isBn
+                    ? 'নাগরিক পৈতৃক ও পারিবারিক সূত্রে পিতা এবং মাতা হতে বৈধভাবে উত্তরাধিকার লাভ করেন।'
+                    : 'The citizen legally inherits parental property from father and mother.'}
+                </p>
+
+                {myParents.length > 0 ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.75rem' }}>
+                    {myParents.map(parent => (
+                      <div
+                        key={parent.id}
+                        style={{
+                          background: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: 'var(--radius-md)',
+                          padding: '0.85rem 1rem',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
+                            <span className="badge badge-primary">{isBn ? parent.relationLabel : parent.relationLabelEn}</span>
+                            <strong style={{ fontSize: '0.95rem', color: '#0f172a' }}>{isBn ? parent.name : parent.nameEn}</strong>
+                          </div>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                            {parent.isDeceased ? (isBn ? 'মৃত মূল মালিক' : 'Deceased Owner') : (isBn ? 'জীবিত' : 'Living')}
+                            {parent.nid ? ` • NID: ****${parent.nid.slice(-4)}` : ''}
+                          </span>
+                        </div>
+                        <span className="badge badge-success">{isBn ? 'উত্তরাধিকারের উৎস' : 'Inheritance Source'}</span>
                       </div>
-                      <div className="heir-tags-row">
-                        {fm.isDeceased ? (
-                          <span className="badge badge-danger">{t('heir.deceased')}</span>
-                        ) : (
-                          <span className="badge badge-success">{t('heir.living')}</span>
-                        )}
-                        {getVerifBadge(fm.verificationStatus)}
-                      </div>
-                      {fm.nid && (
-                        <p className="heir-meta">NID: ****{fm.nid.slice(-4)}</p>
-                      )}
-                    </div>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <p className="text-muted" style={{ fontSize: '0.825rem', margin: 0 }}>
+                    {isBn ? 'পিতা বা মাতার তথ্য সংযোজন প্রয়োজন।' : 'Parent information needed.'}
+                  </p>
+                )}
               </div>
-            )}
-          </div>
-        )}
+
+              {/* 2. Direct Heirs List: Strictly Wife, Son, and Daughter */}
+              <div className="section-title-bar" style={{ marginBottom: '0.75rem' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#0f172a' }}>
+                    {isBn ? 'নাগরিকের উত্তরাধিকারী বিবরণ (স্ত্রী, পুত্র ও কন্যা)' : 'Citizen Heirs Details (Wife, Son & Daughter)'}
+                  </h3>
+                  <p className="text-muted" style={{ fontSize: '0.825rem' }}>
+                    {isBn ? 'নাগরিকের মৃত্যুর পর ফারায়েজ মোতাবেক ওয়ারিশান হিসেবে গণ্য ব্যক্তিবর্গ' : 'Direct legal heirs according to applicable succession rules'}
+                  </p>
+                </div>
+              </div>
+
+              {myHeirs.length === 0 ? (
+                <div className="content-card text-center p-4">
+                  <Users size={48} style={{ color: 'var(--color-primary)', margin: '0 auto 1rem' }} />
+                  <h3>{t('heir.noHeirs')}</h3>
+                  <p className="text-muted">{t('heir.addHint')}</p>
+                </div>
+              ) : (
+                <div className="heirs-grid">
+                  {myHeirs.map(fm => (
+                    <div key={fm.id} className="heir-card">
+                      <div className="heir-avatar-circle">
+                        <span>{fm.name.charAt(0)}</span>
+                      </div>
+                      <div className="heir-details">
+                        <div className="heir-name-row">
+                          <h3>{isBn ? fm.name : fm.nameEn}</h3>
+                          <span className="badge badge-muted">
+                            {isBn ? fm.relationLabel : fm.relationLabelEn}
+                          </span>
+                        </div>
+                        <div className="heir-tags-row">
+                          {fm.isDeceased ? (
+                            <span className="badge badge-danger">{t('heir.deceased')}</span>
+                          ) : (
+                            <span className="badge badge-success">{t('heir.living')}</span>
+                          )}
+                          {getVerifBadge(fm.verificationStatus)}
+                        </div>
+                        {fm.nid && (
+                          <p className="heir-meta">NID: ****{fm.nid.slice(-4)}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* ═════════ 4. MY INHERITANCE TAB ═════════ */}
         {activeTab === 'inheritance' && (() => {
@@ -723,7 +788,7 @@ export default function CitizenDashboard() {
                   <div className="card-header-title">
                     <Users size={18} className="text-primary" />
                     <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
-                      {isBn ? 'অভিভাবক ও পারিবারিক সদস্য বিবরণ' : 'Parent & Family Members Overview'}
+                      {isBn ? 'উত্তরাধিকার প্রাপ্তির উৎস ও পারিবারিক সদস্য বিবরণ' : 'Inheritance Source & Family Members Overview'}
                     </h3>
                   </div>
                   <span className="badge badge-info font-mono">
@@ -735,7 +800,7 @@ export default function CitizenDashboard() {
                 <div style={{ marginBottom: '1.25rem' }}>
                   <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                     <Landmark size={15} className="text-primary" />
-                    <span>{isBn ? 'পৈতৃক জমি দেখতে পিতা বা মাতা নির্বাচন করুন:' : 'Select Father or Mother to View Land Records:'}</span>
+                    <span>{isBn ? 'উত্তরাধিকার প্রাপ্তির উৎস: পিতা ও মাতা (পৈতৃক জমি দেখতে পিতা বা মাতা নির্বাচন করুন):' : 'Inheritance Source: Father & Mother (Select Father or Mother to View Land Records):'}</span>
                   </div>
 
                   {myParents.length === 0 ? (
@@ -798,7 +863,7 @@ export default function CitizenDashboard() {
                 {/* Direct Heirs: Wife, Sons, Daughters */}
                 <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
                   <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.65rem' }}>
-                    {isBn ? 'অন্যান্য পারিবারিক সদস্য ও উত্তরাধিকারী (স্ত্রী, পুত্র ও কন্যা):' : 'Other Family Members & Direct Heirs (Wife, Sons & Daughters):'}
+                    {isBn ? 'নাগরিকের উত্তরাধিকারী বিবরণ (স্ত্রী, পুত্র ও কন্যা):' : 'Citizen Heirs Details (Wife, Sons & Daughters):'}
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '0.75rem' }}>
