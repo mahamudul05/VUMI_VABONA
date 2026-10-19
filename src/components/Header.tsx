@@ -113,15 +113,6 @@ export default function Header() {
 
   return (
     <>
-      {/* Prototype notice banner - subtle and non-intrusive */}
-      <div className="prototype-banner">
-        <span>
-          {isBn
-            ? 'ভূমি ভাবনা — বিশ্ববিদ্যালয় হ্যাকাথন প্রোটোটাইপ সংস্করণ (LandTech 2026)'
-            : 'Vumi Vabona — University Hackathon Prototype Edition (LandTech 2026)'}
-        </span>
-      </div>
-
       <header className="header">
         <div className="container header-inner">
           {/* Logo & Branding */}

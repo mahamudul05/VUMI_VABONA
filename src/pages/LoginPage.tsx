@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserCircle, Shield, Briefcase, AlertCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { Card, Disclaimer } from '../components/SharedUI';
+import { Card } from '../components/SharedUI';
 
 export default function LoginPage() {
   const { t, language, currentUser, users, dispatch, addAudit } = useApp();
@@ -78,8 +78,6 @@ export default function LoginPage() {
           </div>
           <h1 className="page-title">{t('login.title')}</h1>
           <p className="page-subtitle">{t('login.subtitle')}</p>
-
-          <Disclaimer text={t('login.disclaimer')} type="info" />
 
           <div className="login-cards" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', marginTop: '1.5rem' }}>
             {roleCards.map(card => (

@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import {
   Search, FileCheck, Users, ClipboardList, ArrowRight,
   HelpCircle, ShieldCheck, QrCode, FileText, CheckCircle,
-  Award, Sparkles, UserCheck, ChevronRight
+  Sparkles, UserCheck, ChevronRight
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
@@ -89,27 +89,6 @@ export default function HomePage() {
       <section className="hero">
         <div className="container">
           <div className="hero-content">
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              background: 'rgba(255, 255, 255, 0.15)',
-              padding: '0.35rem 0.85rem',
-              borderRadius: '9999px',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              marginBottom: '1rem',
-              backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(255, 255, 255, 0.25)'
-            }}>
-              <Award size={16} />
-              <span>
-                {isBn
-                  ? 'ল্যান্ডটেক ২০২৬ হ্যাকাথন প্রোটোটাইপ — সমস্যা P2: দলিল ও মালিকানা যাচাই'
-                  : 'LandTech 2026 Prototype — Problem P2: Deed & Ownership Verification'}
-              </span>
-            </div>
-
             <h1 className="hero-title">{t('home.welcome')}</h1>
             <p className="hero-subtitle">{t('home.subtitle')}</p>
 
@@ -120,11 +99,10 @@ export default function HomePage() {
               flexWrap: 'wrap',
               marginTop: '1.75rem'
             }}>
-              <Link to="/deed-verify" className="btn btn-primary btn-lg" style={{
-                background: '#ffffff',
-                color: 'var(--color-primary-dark)',
-                borderColor: '#ffffff',
-                boxShadow: 'var(--shadow-md)'
+              <Link to="/deed-verify" className="btn btn-outline btn-lg" style={{
+                color: '#ffffff',
+                borderColor: 'rgba(255,255,255,0.7)',
+                background: 'rgba(255,255,255,0.08)'
               }}>
                 <FileCheck size={20} />
                 <span>{isBn ? 'দলিল যাচাই শুরু করুন' : 'Start Deed Verification'}</span>

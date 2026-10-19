@@ -125,27 +125,12 @@ img { max-width: 100%; height: auto; }
   background: var(--color-bg-alt);
 }
 
-/* ── Prototype Banner ─────────────────────────────── */
-.prototype-banner {
-  background: #f1f5f9;
-  color: #475569;
-  border-bottom: 1px solid #e2e8f0;
-  text-align: center;
-  padding: 0.25rem 1rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  position: sticky;
-  top: 0;
-  z-index: 1001;
-}
-
 /* ── Header ───────────────────────────────────────── */
 .header {
   background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-primary-dark) 100%);
   color: white;
   position: sticky;
-  top: 25px;
+  top: 0;
   z-index: 1000;
   box-shadow: var(--shadow-md);
 }
@@ -2011,21 +1996,177 @@ img { max-width: 100%; height: auto; }
 /* ── Footer ───────────────────────────────────────── */
 .footer {
   background: var(--color-secondary);
-  color: rgba(255,255,255,0.8);
-  padding: 1.5rem 0;
-  margin-top: 2rem;
+  color: rgba(255,255,255,0.85);
+  padding: 2rem 0 1.5rem;
+  margin-top: 2.5rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
 }
 
 .footer-inner {
-  text-align: center;
+  width: 100%;
+  max-width: 100%;
+  padding: 0 3.5rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  box-sizing: border-box;
 }
 
-.footer-main { font-size: var(--font-size-sm); font-weight: 600; }
-.footer-disclaimer { font-size: var(--font-size-xs); opacity: 0.7; }
-.footer-ai-disclosure { font-size: var(--font-size-xs); opacity: 0.5; }
+/* Left: Varsity & Team Logos */
+.footer-left {
+  flex: 1;
+  max-width: 42%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+  text-align: left;
+  z-index: 2;
+}
+
+.footer-support-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.75);
+  letter-spacing: 0.02em;
+  padding-left: 1.25rem;
+  margin: 0;
+}
+
+.footer-partners {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.footer-partner-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.35rem 0.75rem;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--radius-md);
+  transition: all var(--transition);
+}
+.footer-partner-item:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.25);
+}
+
+.partner-logo {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.partner-logo.diu-logo {
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+}
+
+.partner-logo.elysium-logo {
+  height: 30px;
+}
+
+.partner-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: 0.01em;
+}
+
+/* Middle: Government Logo */
+.footer-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.footer-gov-seal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  transition: transform var(--transition);
+}
+.footer-gov-seal:hover {
+  transform: scale(1.06);
+}
+
+.footer-gov-logo {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  border-radius: 50%;
+  display: block;
+}
+
+/* Right: Prototype Quote & System Info */
+.footer-right {
+  flex: 1;
+  max-width: 42%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  text-align: right;
+  z-index: 2;
+}
+
+.footer-main { font-size: var(--font-size-sm); font-weight: 600; color: #ffffff; margin: 0; }
+.footer-disclaimer { font-size: var(--font-size-xs); opacity: 0.75; margin: 0; }
+.footer-ai-disclosure { font-size: var(--font-size-xs); opacity: 0.55; margin: 0; }
+
+@media (max-width: 1200px) {
+  .footer-inner {
+    padding: 0 2rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .footer-inner {
+    position: static;
+    flex-direction: column;
+    text-align: center;
+    gap: 1.25rem;
+    padding: 0 1.25rem;
+  }
+  .footer-left {
+    max-width: 100%;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+  }
+  .footer-support-label {
+    padding-left: 0;
+  }
+  .footer-partners {
+    justify-content: center;
+  }
+  .footer-center {
+    position: static;
+    transform: none;
+    order: -1;
+  }
+  .footer-right {
+    max-width: 100%;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+  }
+}
 
 /* ── Responsive ───────────────────────────────────── */
 .desktop-only { display: flex; }
