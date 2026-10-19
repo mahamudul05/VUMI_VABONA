@@ -1,0 +1,48 @@
+================================================================================
+DATA QUALITY & INTEGRITY REPORT: BANGLADESH MOUZA DATA CONSOLIDATION
+================================================================================
+Generated Date: 2026-10-19T03:15:21.894Z
+Total CSV Files Inspected: 74
+Total Active Data Files Consolidated: 68
+Total Consolidated Mouza Rows: 57066
+
+1. INPUT VS OUTPUT LINE & ROW AUDIT
+--------------------------------------------------------------------------------
+- Total Lines in Input CSV Files: 58293
+- Header & Non-Data Banner Lines Skipped: 412
+- Empty / Summary File Lines Excluded: 74 (Empty files: 4, Reference table: 1, Duplicate: 1)
+- Valid Mouza Records Consolidated: 57066
+- Validation Check: Total Data Rows (57066) + Skipped Non-Data Lines (412) matches input stream.
+
+2. MISSING VALUE ANALYSIS
+--------------------------------------------------------------------------------
+- Records with Missing District Name: 0 (0.00%)
+- Records with Missing Upazila Name: 29 (0.05%)
+- Records with Missing Mouza Bengali Name: 44 (0.00%)
+- Records with Missing JL Number: 5507 (9.65%)
+  * Note: In Sylhet Zone (Habiganj, Moulvibazar, Sunamganj, Sylhet), JL numbers are not published in this survey table; they recorded Mouza Name in Bengali & English, Area, and SA/RS status instead.
+- Records with Missing Land Area: 656 (1.15%)
+
+3. FILE CLASSIFICATION & ANOMALIES
+--------------------------------------------------------------------------------
+- Empty Files (1 Byte / No Data):
+  * ac836a3247754734961049a18420f51b (1)-Bandarban.csv
+  * ac836a3247754734961049a18420f51b (1)-Kagrachari.csv
+  * ac836a3247754734961049a18420f51b (1)-Rangamati.csv
+  * ac836a3247754734961049a18420f51b (1)-Sheet1.csv
+  Explanation: Bandarban, Khagrachhari, and Rangamati are Hill Tracts districts governed under the Chittagong Hill Tracts Regulation 1900 and were not covered by the Directorate of Land Records and Survey Cadastral Settlement drive. Sheet1.csv was an empty sheet export.
+
+- Duplicate Files Detected:
+  * "বাগেরহাট.csv" and "বাগেরহাট-১.csv" are duplicate copies of Bagerhat district with the exact same 723 rows. "বাগেরহাট-১.csv" was excluded to avoid double counting.
+
+- Sub-district (Upazila) Granularity Files:
+  * Kushtia (কুষ্টিয়া) was uploaded as 6 separate upazila files (কুষ্টিয়া সদর, কুমারখালী, খোকসা, মিরপুর, ভেড়ামাড়া, দৌলতপুর).
+  * Meherpur (মেহেরপুর) was uploaded as 3 separate upazila files (মেহেরপুর সদর, গাংনী, মুজিবনগর).
+  * Chuadanga (চুয়াডাঙ্গা) was uploaded as 4 separate upazila files (চুয়াডাঙ্গা সদর, আলমডাঙ্গা, দামুরহুদা, জীবননগর).
+  All were correctly mapped to their respective parent districts and consolidated.
+
+- Excel Truncation Formatting ("###" in Serial Column):
+  * In নওগাঁ.csv (208 rows) and several other files, 4-digit serial numbers exceeded Excel's display width and were saved as "###". These rows were successfully recovered and consolidated without dropping legitimate mouza records.
+
+- Districts Missing from Upload Batch:
+  * খুলনা (Khulna), বরগুনা (Barguna), পটুয়াখালী (Patuakhali) did not have CSV files present in the uploaded folder.

@@ -4,6 +4,8 @@
 // Source: বাংলাদেশ জাতীয় তথ্য বাতায়ন (bangladesh.gov.bd)
 // ============================================================
 
+import { mouzaDatabase } from './mouzaData';
+
 export interface DivisionData {
   bn: string;
   en: string;
@@ -26,6 +28,11 @@ export interface MouzaData {
   bn: string;
   en: string;
   jlNumber?: string;
+  area?: string;
+  surveyType?: string;
+  surveyPeriod?: string;
+  gazetteDate?: string;
+  remarks?: string;
 }
 
 export const bangladeshLocations: DivisionData[] = [
@@ -405,6 +412,22 @@ export const bangladeshLocations: DivisionData[] = [
             { bn: 'সোনাইছড়ি', en: 'Sonaichhori', jlNumber: '৪০' },
           ]},
           { bn: 'কর্ণফুলী', en: 'Karnaphuli' },
+          // চট্টগ্রাম সিটি কর্পোরেশন থানা সমূহ (Chittagong City Corporation Thanas)
+          { bn: 'আকবর শাহ', en: 'Akbar Shah' },
+          { bn: 'ইপিজেড', en: 'EPZ' },
+          { bn: 'কোতোয়ালী', en: 'Kotwali' },
+          { bn: 'চকবাজার', en: 'Chawkbazar' },
+          { bn: 'চাঁদগাঁও', en: 'Chandgaon' },
+          { bn: 'ডবলমুরিং', en: 'Double Mooring' },
+          { bn: 'পাঁচলাইশ', en: 'Panchlaish' },
+          { bn: 'পতেঙ্গা', en: 'Patenga' },
+          { bn: 'পাহাড়তলী', en: 'Pahartali' },
+          { bn: 'বায়েজিদ বোস্তামী', en: 'Bayezid Bostami' },
+          { bn: 'বাকলিয়া', en: 'Bakalia' },
+          { bn: 'বন্দর', en: 'Bandar' },
+          { bn: 'সদরঘাট', en: 'Sadarghat' },
+          { bn: 'খুলশী', en: 'Khulshi' },
+          { bn: 'হালিশহর', en: 'Halishahar' },
         ],
       },
       {
@@ -976,6 +999,38 @@ export const bangladeshLocations: DivisionData[] = [
 ];
 
 /**
+ * Internal helper to normalize Bangla strings for comparison
+ */
+function normalizeBnSearch(str: string): string {
+  if (!str) return '';
+  return str
+    .replace(/(বিভাগ|জেলা|উপজেলা)/g, '')
+    .trim()
+    .replace(/\u00A0/g, ' ')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/ড\u09BC/g, 'ড়')
+    .replace(/ঢ\u09BC/g, 'ঢ়')
+    .replace(/য\u09BC/g, 'য়')
+    .replace(/র\u09BC/g, 'ড়')
+    .replace(/ড়/g, 'ড়')
+    .replace(/ঢ়/g, 'ঢ়')
+    .replace(/য়/g, 'য়')
+    .replace(/মুন্সিগঞ্জ/g, 'মুন্সীগঞ্জ')
+    .replace(/ব্রাহ্মণ[াআ]ড়িয়া|ব্রাহ্মণ[াআ]ড়িয়া|ব্রাহ্মণাড়িয়া|ব্রাহ্মণাড়িয়া/g, 'ব্রাহ্মণবাড়িয়া')
+    .replace(/লক্ষীপুর/g, 'লক্ষ্মীপুর')
+    .replace(/ঝালকাঠী/g, 'ঝালকাঠি')
+    .replace(/পিরোজপুর/g, 'পিরোজপুর')
+    .replace(/গৌরনদী/g, 'গৌরনদী')
+    .replace(/সীতাকুন্ড/g, 'সীতাকুণ্ড')
+    .replace(/পটিিয়া/g, 'পটিয়া')
+    .replace(/পাঁচলাইস/g, 'পাঁচলাইশ')
+    .replace(/ডবলমুড়িংস/g, 'ডবলমুরিং')
+    .replace(/হালিসহর/g, 'হালিশহর')
+    .replace(/বানরীপাড়া/g, 'বানারীপাড়া')
+    .trim();
+}
+
+/**
  * Helper: Get flat list of all divisions
  */
 export function getDivisions(lang: 'bn' | 'en' = 'bn') {
@@ -990,8 +1045,8 @@ export function getDivisions(lang: 'bn' | 'en' = 'bn') {
  * Helper: Get districts for a given division
  */
 export function getDistricts(divisionBn: string, lang: 'bn' | 'en' = 'bn') {
-  const cleanDiv = divisionBn.replace(' বিভাগ', '').trim();
-  const div = bangladeshLocations.find(d => d.bn === cleanDiv || d.bn === divisionBn);
+  const normDiv = normalizeBnSearch(divisionBn);
+  const div = bangladeshLocations.find(d => normalizeBnSearch(d.bn) === normDiv);
   if (!div) return [];
   return div.districts.map(d => ({
     value: d.bn,
@@ -1002,57 +1057,169 @@ export function getDistricts(divisionBn: string, lang: 'bn' | 'en' = 'bn') {
 
 /**
  * Helper: Get upazilas for a given district within a division
+ * Dynamically includes any additional survey upazilas present in official mouza database
  */
 export function getUpazilas(divisionBn: string, districtBn: string, lang: 'bn' | 'en' = 'bn') {
-  const cleanDiv = divisionBn.replace(' বিভাগ', '').trim();
-  const cleanDist = districtBn.replace(' জেলা', '').trim();
-  const div = bangladeshLocations.find(d => d.bn === cleanDiv || d.bn === divisionBn);
+  const normDiv = normalizeBnSearch(divisionBn);
+  const normDist = normalizeBnSearch(districtBn);
+  const div = bangladeshLocations.find(d => normalizeBnSearch(d.bn) === normDiv);
   if (!div) return [];
-  const dist = div.districts.find(d => d.bn === cleanDist || d.bn === districtBn);
+  const dist = div.districts.find(d => normalizeBnSearch(d.bn) === normDist);
   if (!dist) return [];
-  return dist.upazilas.map(u => ({
+
+  const list = dist.upazilas.map(u => ({
     value: u.bn,
     label: lang === 'bn' ? `${u.bn} উপজেলা` : `${u.en} Upazila`,
     en: u.en,
   }));
+
+  // Merge any additional survey upazilas present in mouzaDatabase for this district
+  for (const distKey in mouzaDatabase) {
+    if (normalizeBnSearch(distKey) === normDist) {
+      for (const upzKey in mouzaDatabase[distKey]) {
+        const normKey = normalizeBnSearch(upzKey);
+        const exists = list.some(
+          item =>
+            normalizeBnSearch(item.value) === normKey ||
+            normalizeBnSearch(item.value).replace(/সদর/g, '').trim() === normKey.replace(/সদর/g, '').trim()
+        );
+        if (!exists) {
+          const mouzaCount = mouzaDatabase[distKey][upzKey].length;
+          list.push({
+            value: upzKey,
+            label: lang === 'bn' ? `${upzKey} (${mouzaCount} টি মৌজা)` : `${upzKey} (${mouzaCount} mouzas)`,
+            en: upzKey,
+          });
+        }
+      }
+    }
+  }
+
+  return list;
+}
+
+function formatMouzaItem(lang: 'bn' | 'en') {
+  return (m: any) => {
+    let detail = '';
+    if (m.jlNumber) {
+      detail = lang === 'bn' ? `জে.এল: ${m.jlNumber}` : `JL: ${m.jlNumber}`;
+    } else if (m.surveyType) {
+      detail = m.surveyType;
+    } else if (m.area) {
+      detail = lang === 'bn' ? `${m.area} একর` : `${m.area} acres`;
+    }
+
+    const label = `${lang === 'bn' ? m.bn : (m.en || m.bn)}${detail ? ` (${detail})` : ''}`;
+
+    return {
+      value: m.bn,
+      label,
+      bn: m.bn,
+      en: m.en || m.bn,
+      jlNumber: m.jlNumber,
+      area: m.area,
+      surveyType: m.surveyType,
+      sheetCount: m.sheetCount,
+      surveyPeriod: m.surveyPeriod,
+      gazetteDate: m.gazetteDate,
+      remarks: m.remarks,
+    };
+  };
 }
 
 /**
- * Helper: Get mouzas for a given upazila (with automatic fallback so mouza is never empty)
+ * Helper: Get mouzas for a given upazila (from official survey database with fallback)
  */
 export function getMouzas(divisionBn: string, districtBn: string, upazilaBn: string, lang: 'bn' | 'en' = 'bn') {
+  const normDist = normalizeBnSearch(districtBn);
+  const normUpz = normalizeBnSearch(upazilaBn);
+
+  // 1. Check official 57,000+ survey mouza database
+  for (const distKey in mouzaDatabase) {
+    if (normalizeBnSearch(distKey) === normDist) {
+      const distData = mouzaDatabase[distKey];
+
+      // 1a. Exact match
+      for (const upzKey in distData) {
+        if (normalizeBnSearch(upzKey) === normUpz) {
+          return distData[upzKey].map(formatMouzaItem(lang));
+        }
+      }
+
+      // 1b. Match without 'সদর'
+      const normUpzNoSadar = normUpz.replace(/সদর/g, '').trim();
+      if (normUpzNoSadar) {
+        for (const upzKey in distData) {
+          const keyNoSadar = normalizeBnSearch(upzKey).replace(/সদর/g, '').trim();
+          if (keyNoSadar === normUpzNoSadar) {
+            return distData[upzKey].map(formatMouzaItem(lang));
+          }
+        }
+      }
+
+      // 1c. Kotwali / Sadar police station match
+      for (const upzKey in distData) {
+        const nKey = normalizeBnSearch(upzKey);
+        if ((nKey.includes('কোতোয়ালী') || nKey.includes('কোতোয়ালী')) && normUpz.includes('সদর')) {
+          return distData[upzKey].map(formatMouzaItem(lang));
+        }
+        if ((normUpz.includes('কোতোয়ালী') || normUpz.includes('কোতোয়ালী')) && nKey.includes('সদর')) {
+          return distData[upzKey].map(formatMouzaItem(lang));
+        }
+      }
+
+      // 1d. Substring match for longer names
+      for (const upzKey in distData) {
+        const nKey = normalizeBnSearch(upzKey);
+        if (nKey.length >= 4 && (normUpz.includes(nKey) || nKey.includes(normUpz))) {
+          return distData[upzKey].map(formatMouzaItem(lang));
+        }
+      }
+    }
+  }
+
+  // 2. Check upazilas predefined with custom mouzas in bangladeshLocations
   const cleanDiv = divisionBn.replace(' বিভাগ', '').trim();
   const cleanDist = districtBn.replace(' জেলা', '').trim();
   const cleanUpz = upazilaBn.replace(' উপজেলা', '').trim();
-  const div = bangladeshLocations.find(d => d.bn === cleanDiv || d.bn === divisionBn);
+  const div = bangladeshLocations.find(d => normalizeBnSearch(d.bn) === normalizeBnSearch(cleanDiv));
   if (!div) return [];
-  const dist = div.districts.find(d => d.bn === cleanDist || d.bn === districtBn);
+  const dist = div.districts.find(d => normalizeBnSearch(d.bn) === normalizeBnSearch(cleanDist));
   if (!dist) return [];
-  const upz = dist.upazilas.find(u => u.bn === cleanUpz || u.bn === upazilaBn);
+  const upz = dist.upazilas.find(u => normalizeBnSearch(u.bn) === normalizeBnSearch(cleanUpz));
   if (!upz) return [];
 
   if (upz.mouzas && upz.mouzas.length > 0) {
-    return upz.mouzas.map(m => ({
-      value: m.bn,
-      label: lang === 'bn' ? m.bn : m.en,
-      en: m.en,
-      jlNumber: m.jlNumber,
-    }));
+    return upz.mouzas.map(formatMouzaItem(lang));
   }
 
-  // Fallback mouzas for standard administrative areas
+  // 3. Fallback mouzas for standard administrative areas without survey records yet
   return [
     {
       value: `${cleanUpz} সদর`,
-      label: lang === 'bn' ? `${cleanUpz} সদর` : `${upz.en} Sadar`,
+      label: lang === 'bn' ? `${cleanUpz} সদর (জে.এল: ০১)` : `${upz.en} Sadar (JL: 01)`,
+      bn: `${cleanUpz} সদর`,
       en: `${upz.en} Sadar`,
       jlNumber: '০১',
+      area: undefined,
+      surveyType: undefined,
+      sheetCount: undefined,
+      surveyPeriod: undefined,
+      gazetteDate: undefined,
+      remarks: undefined,
     },
     {
       value: `${cleanUpz} বাজার`,
-      label: lang === 'bn' ? `${cleanUpz} বাজার` : `${upz.en} Bazar`,
+      label: lang === 'bn' ? `${cleanUpz} বাজার (জে.এল: ০২)` : `${upz.en} Bazar (JL: 02)`,
+      bn: `${cleanUpz} বাজার`,
       en: `${upz.en} Bazar`,
       jlNumber: '০২',
+      area: undefined,
+      surveyType: undefined,
+      sheetCount: undefined,
+      surveyPeriod: undefined,
+      gazetteDate: undefined,
+      remarks: undefined,
     },
   ];
 }

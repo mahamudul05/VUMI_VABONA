@@ -1,0 +1,30 @@
+================================================================================
+REPORT ON DAG (LAND PLOT) NUMBER AVAILABILITY IN UPLOADED FILES
+================================================================================
+Question: Are individual Dag (plot) numbers present in the uploaded CSV files?
+Answer: NO. Individual Dag (plot) numbers are NOT present in any of the uploaded files.
+
+DETAILED TECHNICAL FINDINGS:
+--------------------------------------------------------------------------------
+1. Purpose & Scope of the Uploaded Datasets:
+   - All 74 CSV files in the uploaded dataset represent official Zonal Settlement Office Mouza Master Registers (মৌজা ও জেএল নম্বর তালিকা).
+   - These records are published by the Directorate of Land Records and Surveys (DLRS), Ministry of Land, Bangladesh, to catalog all administrative Mouza jurisdictions, their Jurisdiction List (J.L.) numbers, total mouza area (in acres), survey stages (CS, SA, RS, BRS, BDS), and gazette dates.
+
+2. Comprehensive Column Inspection Across 74 Files:
+   - Total columns inspected: Over 480 unique header variations.
+   - None of the 74 files contain a column named "dag", "dag_no", "plot", "দাগ", "দাগ নম্বর", or "দাগ নং".
+   - The numerical identifiers present in the files are strictly:
+     a) Serial Numbers (ক্রঃ নং / ক্রমিক নং)
+     b) Jurisdiction List Numbers (জে.এল. নং / JL Number)
+     c) Map Sheet Counts (শীট সংখ্যা)
+     d) Survey Land Area in Acres (আয়তন / জমির এরিয়া একরে)
+
+3. Nature of Dag-Level Data in Bangladesh Land Administration:
+   - An individual Mouza typically contains hundreds to thousands of distinct Dag (plot) numbers.
+   - For example, across Bangladesh's ~58,451 mouzas, there are an estimated 70,000,000+ (70 million) individual dag plots.
+   - Dag numbers are maintained in the Mouza Plot Index (দাগসূচি) and Khatian Records of Rights (খতিয়ান), which are separate registry systems.
+
+CONCLUSION & RECOMMENDATION:
+--------------------------------------------------------------------------------
+- The current consolidated dataset provides a complete, authoritative foundation for Division > District > Upazila > Mouza > JL Number hierarchy.
+- For Dag-level queries, the system can support user entry or search against parcel records, or connect to specific Mouza Khatian/Dag APIs when available.

@@ -638,35 +638,39 @@ export default function AdminDashboard() {
   const recentAdminActivities = auditLog.slice(-8).reverse();
 
   return (
-    <div className="portal-page">
+    <div className="portal-container">
       {/* ── Admin Sidebar ─────────────────────────────── */}
       <aside className="portal-sidebar">
         <div className="portal-sidebar-header">
-          <div className="sidebar-role-badge">
-            <Shield size={16} />
-            <span>
-              {currentUser.role === 'super_admin' 
-                ? (isBn ? 'সুপার অ্যাডমিন' : 'Super Admin') 
-                : (isBn ? 'প্রশাসক' : 'Administrator')}
-            </span>
+          <div className="portal-user-badge">
+            <span className="user-avatar-sm avatar-admin"><Shield size={20} /></span>
+            <div className="portal-user-meta">
+              <span className="portal-user-name">{currentUser.name}</span>
+              <span className="portal-role-tag badge-role-admin">
+                {currentUser.role === 'super_admin' 
+                  ? (isBn ? 'সুপার অ্যাডমিন' : 'Super Admin') 
+                  : (isBn ? 'সিস্টেম প্রশাসক' : 'System Administrator')}
+              </span>
+            </div>
           </div>
-          <h2 className="sidebar-title">{currentUser.name}</h2>
-          <span className="sidebar-user-id">{currentUser.email || currentUser.id}</span>
         </div>
 
-        <nav className="portal-nav">
+        <nav className="portal-sidebar-nav">
           {navItems.map(item => {
             const Icon = item.icon;
+            const isActive = activeTab === item.key;
             return (
               <button
                 key={item.key}
-                className={`portal-nav-item ${activeTab === item.key ? 'active' : ''}`}
+                className={`portal-nav-btn ${isActive ? 'active' : ''}`}
                 onClick={() => setActiveTab(item.key)}
               >
-                <Icon size={18} />
-                <span className="nav-label">{item.label}</span>
+                <Icon size={18} className="portal-nav-icon" />
+                <span className="portal-nav-label">{item.label}</span>
                 {item.count !== undefined && item.count > 0 && (
-                  <span className="nav-count">{item.count}</span>
+                  <span className="portal-nav-count">
+                    {isBn ? toBanglaDigits(item.count) : item.count}
+                  </span>
                 )}
               </button>
             );
@@ -674,9 +678,11 @@ export default function AdminDashboard() {
         </nav>
 
         <div className="portal-sidebar-footer">
-          <div className="system-health-badge">
-            <span className="pulse-indicator"></span>
-            <span>{isBn ? 'সিস্টেম স্ট্যাটাস: সক্রিয়' : 'System: Active'}</span>
+          <div className="portal-sidebar-help">
+            <span className="text-muted" style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span className="pulse-indicator"></span>
+              {isBn ? 'সিস্টেম স্ট্যাটাস: সক্রিয়' : 'System Status: Active'}
+            </span>
           </div>
         </div>
       </aside>
@@ -686,27 +692,37 @@ export default function AdminDashboard() {
         {/* ═════════ 1. OVERVIEW TAB ═════════ */}
         {activeTab === 'overview' && (
           <div className="portal-content">
-            <div className="portal-welcome-banner">
-              <div className="banner-content">
-                <h1>{isBn ? 'প্রশাসনিক কেন্দ্রীয় নিয়ন্ত্রণ কেন্দ্র' : 'Central Administrative Dashboard'}</h1>
-                <p>
+            <div className="welcome-banner welcome-banner-admin">
+              <div className="welcome-content">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.35rem' }}>
+                  <h1 className="welcome-title" style={{ margin: 0 }}>
+                    {isBn ? 'প্রশাসনিক কেন্দ্রীয় নিয়ন্ত্রণ কেন্দ্র' : 'Central Administrative Dashboard'}
+                  </h1>
+                  <span className="badge badge-primary font-mono">
+                    {currentUser.role === 'super_admin' ? 'SUPER ADMIN ACCESS' : 'ADMIN CONTROL'}
+                  </span>
+                </div>
+                <p className="welcome-subtitle">
                   {isBn
                     ? 'ভূমি ভাবনা প্রোটোটাইপের সকল ডাটাবেজ সত্তা, দলিল লাইব্রেরি ও ব্যবহারকারী রেকর্ড নিয়ন্ত্রণ করুন।'
                     : 'Manage all database entities, reference deed library and user records across Vumi Vabona.'}
                 </p>
-              </div>
-              <div className="banner-badge-box">
-                <span className="banner-khatian-badge font-mono">
-                  {currentUser.role === 'super_admin' ? 'SUPER ADMIN ACCESS' : 'ADMIN CONTROL'}
-                </span>
-                <span className="banner-location-text">
-                  {isBn ? 'জাতীয় ক্যাডাস্ট্রাল প্রোটোটাইপ' : 'National Cadastral Prototype'}
-                </span>
+                <div className="welcome-meta-chips">
+                  <span className="meta-chip">
+                    <Shield size={13} /> {currentUser.name} ({currentUser.role === 'super_admin' ? (isBn ? 'সুপার অ্যাডমিন' : 'Super Admin') : (isBn ? 'সিস্টেম প্রশাসক' : 'System Administrator')})
+                  </span>
+                  <span className="meta-chip">
+                    <Database size={13} /> {isBn ? 'জাতীয় ক্যাডাস্ট্রাল প্রোটোটাইপ' : 'National Cadastral Prototype'}
+                  </span>
+                  <span className="meta-chip">
+                    <Clock size={13} /> {formatDate(new Date().toISOString(), language)}
+                  </span>
+                </div>
               </div>
             </div>
 
             {/* Quick Stat Cards */}
-            <div className="summary-stat-grid">
+            <div className="summary-cards-grid">
               <div className="summary-stat-card card-hover-click" onClick={() => setActiveTab('users')}>
                 <div className="stat-card-icon stat-icon-blue"><Users size={22} /></div>
                 <div className="stat-card-data">
@@ -1923,12 +1939,12 @@ export default function AdminDashboard() {
               </div>
 
               <div className="content-card">
-                <h3>{isBn ? 'সুপার অ্যাডমিন অ্যাকাউন্ট' : 'Super Admin Credentials'}</h3>
+                <h3>{isBn ? 'প্রশাসক নিরাপত্তা ও অ্যাকাউন্ট' : 'Administrator Credentials & Security'}</h3>
                 <div className="settings-rows mt-3">
                   <div className="setting-row">
                     <div>
-                      <strong>{isBn ? 'প্রধান সুপার অ্যাডমিন ইমেইল' : 'Super Admin Email'}</strong>
-                      <p className="text-muted" style={{ fontSize: '0.85rem' }}>mahamudul.diu.cse@gmail.com</p>
+                      <strong>{isBn ? 'সক্রিয় অ্যাকাউন্ট ইমেইল' : 'Active Account Email'}</strong>
+                      <p className="text-muted" style={{ fontSize: '0.85rem' }}>{currentUser.email || (currentUser.role === 'super_admin' ? 'superadmin@vumi.gov.bd' : 'admin@vumi.gov.bd')}</p>
                     </div>
                     <span className="badge badge-success">Protected</span>
                   </div>

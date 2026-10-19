@@ -168,11 +168,30 @@ export default function LandSearchPage() {
 
           {/* Mouza */}
           <div className="form-group">
-            <label>{t('search.mouza')}</label>
+            <label>
+              {t('search.mouza')}{' '}
+              {upazila && (
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-primary, #059669)', fontWeight: 'normal' }}>
+                  ({isBn ? `${toBanglaDigits(mouzas.length)}টি মৌজা প্রাপ্ত` : `${mouzas.length} mouzas found`})
+                </span>
+              )}
+            </label>
             <select value={mouza} onChange={e => setMouza(e.target.value)} disabled={!upazila}>
               <option value="">{t('search.selectMouza')}</option>
-              {mouzas.map(m => <option key={m.value} value={m.value}>{m.label}{m.jlNumber ? ` (JL: ${m.jlNumber})` : ''}</option>)}
+              {mouzas.map((m, idx) => <option key={`${m.value}-${m.jlNumber || idx}`} value={m.value}>{m.label}</option>)}
             </select>
+            {mouza && (() => {
+              const sel = mouzas.find(m => m.value === mouza);
+              if (!sel) return null;
+              return (
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary, #64748b)', marginTop: '0.35rem', lineHeight: '1.4' }}>
+                  {sel.jlNumber && <span><strong>{isBn ? 'জে.এল. নং:' : 'JL No:'}</strong> {sel.jlNumber}</span>}
+                  {sel.area && <span> • <strong>{isBn ? 'আয়তন:' : 'Area:'}</strong> {sel.area} {isBn ? 'একর' : 'acres'}</span>}
+                  {sel.surveyType && <span> • <strong>{isBn ? 'জরিপ:' : 'Survey:'}</strong> {sel.surveyType}</span>}
+                  {sel.sheetCount && <span> • <strong>{isBn ? 'শীট:' : 'Sheets:'}</strong> {sel.sheetCount}</span>}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Survey Type */}
